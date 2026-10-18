@@ -23,6 +23,6 @@ def run(a,cfg,video,meta):
     if meta.get('warning'): quality.append(meta['warning'])
     coach=generate(metrics,phases,quality) if a.stage>=6 else None
     from .render import render
-    render(video,a.out/'overlay.mp4', rows, phases, balls, a, coach)
+    render(video,a.out/'overlay.mp4', rows, phases, balls, a, coach, distance)
 
     if coach: write_report(a.out,coach,phases,distance,metrics,quality)

@@ -38,3 +38,7 @@ python analyze_golf.py --video /path/iphone.mov --stage 0 --out output
 ## Step 6：中文规则建议
 
 `--stage 6` 生成 report.md、report.html、coaching.json。最多3条，按头部移动/领先臂/收杆稳定/顶点高度筛选，包含量化证据、阶段时间、帧号、纠正和下一杆练习。低置信度不下结论；没有正面证据就明确保留，不编造表扬。阈值是保守工程启发式，不替代专业现场诊断。
+
+## Step 7：合成视频
+
+`--stage 7` 合成 H264/yuv420p、骨架、候选球圈、有效飞行段、事件、低置信度杆身线、阶段置信度、中文结论及距离降级说明；生成 keyframes/address、top、impact、finish.jpg。击前球圈灰色、击后黄色；不跨丢帧连线。中文字体自动查找 macOS/Windows/Noto CJK，Linux 可设置 `GOLF_FONT=/path/font.ttc`；没有字体则视频显示英文降级提示，中文仍完整保留在报告。`--keep-audio` 保留第一条原音轨。未检测出的阶段不伪造截图。

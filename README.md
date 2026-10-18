@@ -42,3 +42,9 @@ python analyze_golf.py --video /path/iphone.mov --stage 0 --out output
 ## Step 7：合成视频
 
 `--stage 7` 合成 H264/yuv420p、骨架、候选球圈、有效飞行段、事件、低置信度杆身线、阶段置信度、中文结论及距离降级说明；生成 keyframes/address、top、impact、finish.jpg。击前球圈灰色、击后黄色；不跨丢帧连线。中文字体自动查找 macOS/Windows/Noto CJK，Linux 可设置 `GOLF_FONT=/path/font.ttc`；没有字体则视频显示英文降级提示，中文仍完整保留在报告。`--keep-audio` 保留第一条原音轨。未检测出的阶段不伪造截图。
+
+## Step 8：失败和降级
+
+`--stage 8` 与完整运行均启用保守降级。未检测项目为 null + reason；错误写 failure.json。球轨迹点不能外推成撞网/落地；无深度、无尺度不报米数。HDR 转换优先 zscale；ffmpeg 无该滤镜时保留矩阵转换并写明确质量警告。Mac 的 MediaPipe 即使 CPU 也初始化 OpenGL，在受限沙箱/无显示服务可能失败；正常桌面终端可跑，CPU 推理由 XNNPACK 执行。
+
+验证：`python -m pytest -q`，覆盖无姿态、无球、正面拒绝距离、尺度单位、低置信度禁止建议。参数集中在 config.yaml。每个估计都有 method/confidence；模型置信度及工程质量分不是经数据集校准的概率。

@@ -24,6 +24,8 @@ def main():
     if a.impact_time is not None and a.impact_time < 0:
         p.error('impact-time 必须 >= 0')
     cfg = yaml.safe_load(a.config.read_text())
+    if cfg['pose']['stride']<1 or not 0<cfg['pose']['smoothing_alpha']<=1:
+        p.error('姿态 stride 必须 >=1，smoothing_alpha 必须在 (0,1]')
     a.out.mkdir(parents=True, exist_ok=True)
     normalized = a.out/'normalized.mp4'
     print('解码、旋转与 HDR 转换…', flush=True)
@@ -32,7 +34,11 @@ def main():
     if a.stage == 0:
         return
     from golfcoach.pipeline import run
-    run(a, cfg, normalized, meta)
+    try:
+        run(a, cfg, normalized, meta)
+    except Exception as exc:
+        dump(a.out/'failure.json', {'status':'failed','method':'pipeline_exception','confidence':0.,'reason':str(exc)})
+        raise
 
 
 if __name__ == '__main__':

@@ -31,7 +31,7 @@ def extract(video, cfg, model_dir):
                 for person in result.pose_landmarks:
                     p = np.array([[p.x*w,p.y*h,p.visibility] for p in person])
                     center = p[[23,24],:2].mean(axis=0)
-                    candidates = [(np.linalg.norm(center-tr['center']),n) for n,tr in enumerate(tracks) if n not in used and t-tr['last']<0.6]
+                    candidates = [(np.linalg.norm(center-tr['center']),n) for n,tr in enumerate(tracks) if n not in used and t-tr['last']<5.0]
                     dist,n = min(candidates,default=(1e10,-1))
                     if dist > w*0.18:
                         n = len(tracks)

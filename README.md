@@ -34,3 +34,7 @@ python analyze_golf.py --video /path/iphone.mov --stage 0 --out output
 ## Step 5：动作指标
 
 `--stage 5` 查看 metrics，每项带 phase、frame、timestamp、method、confidence。以髋中心/踝中心归一化，计算站宽、膝屈、图像脊柱倾角、头部位移、顶点领先臂夹角、肩髋投影夹角、髋投影转移、顶点手腕高度、下杆手部横移、收杆稳定性。左右手分别使用正确领先臂。侧/斜侧透视不能可靠恢复真实 X-Factor、压力重心、杆面或 over-the-top；只报告2D代理并标低置信度，不包装为生物力学结论。
+
+## Step 6：中文规则建议
+
+`--stage 6` 生成 report.md、report.html、coaching.json。最多3条，按头部移动/领先臂/收杆稳定/顶点高度筛选，包含量化证据、阶段时间、帧号、纠正和下一杆练习。低置信度不下结论；没有正面证据就明确保留，不编造表扬。阈值是保守工程启发式，不替代专业现场诊断。

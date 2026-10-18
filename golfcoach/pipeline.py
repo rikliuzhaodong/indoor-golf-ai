@@ -18,5 +18,11 @@ def run(a,cfg,video,meta):
     from .metrics import calculate
     metrics=calculate(rows,phases,a.handedness,a.view) if a.stage>=5 else {}
     dump(a.out/'swing_metrics.json', {'phases':phases,'distance':distance,'metrics':metrics})
+    from .coaching import generate,write_report
+    quality=[f'挥杆者身份置信度：{selection["confidence"]:.2f}',f'球跟踪：{balls.get("quality",{})}']
+    if meta.get('warning'): quality.append(meta['warning'])
+    coach=generate(metrics,phases,quality) if a.stage>=6 else None
     from .render import render
-    render(video,a.out/'overlay.mp4', rows, phases, balls, a, None)
+    render(video,a.out/'overlay.mp4', rows, phases, balls, a, coach)
+
+    if coach: write_report(a.out,coach,phases,distance,metrics,quality)

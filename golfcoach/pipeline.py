@@ -8,6 +8,11 @@ def run(a,cfg,video,meta):
     dump(a.out/'pose.json', {'coordinate_system':'normalized video pixels, origin top-left','selection':selection,'frames':rows})
     from .phases import segment
     phases = segment(rows,a.impact_time) if a.stage>=2 else {}
+    from .ball import track
+    balls = track(video,rows,phases,cfg['ball'],a.ball_roi) if a.stage>=3 else {}
+    dump(a.out/'ball_track.json', balls)
+    if balls.get('events',{}).get('impact') and a.impact_time is None:
+        phases['impact']=balls['events']['impact']
     dump(a.out/'swing_metrics.json', {'phases':phases})
     from .render import render
-    render(video,a.out/'overlay.mp4', rows, phases, [], a, None)
+    render(video,a.out/'overlay.mp4', rows, phases, balls, a, None)

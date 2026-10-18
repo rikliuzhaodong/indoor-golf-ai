@@ -1,0 +1,23 @@
+video:
+  max_width: 1080
+pose:
+  stride: 2
+  max_people: 4
+  confidence: 0.5
+  smoothing_alpha: 0.65
+  max_gap_seconds: 0.15
+ball:
+  min_radius: 2
+  max_radius: 16
+  min_circularity: 0.48
+  max_gap_seconds: 0.10
+  window_before: 0.7
+  window_after: 0.7
+  max_speed_pixels_second: 18000
+  diameter_m: 0.04267
+  min_scale_diameter_px: 6
+  max_scale_cv: 0.20
+  min_track_points: 3
+physics:
+  outdoor_carry: false
+  horizontal_fov_deg: null

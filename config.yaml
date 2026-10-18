@@ -21,3 +21,11 @@ ball:
 physics:
   outdoor_carry: false
   horizontal_fov_deg: null
+coaching:
+  min_confidence: 0.25
+  head_displacement_torso: 0.18
+  lead_arm_min_angle_deg: 145
+  finish_sway_torso: 0.045
+  top_wrist_below_shoulder_torso: 0.15
+quality:
+  camera_motion_threshold: 0.01

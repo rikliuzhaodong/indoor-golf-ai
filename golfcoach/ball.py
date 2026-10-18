@@ -13,7 +13,13 @@ def candidates(im,cfg,roi=None):
         x,y,w,h=roi
         region=np.zeros_like(mask); region[max(0,y):max(0,y+h),max(0,x):max(0,x+w)]=255
         mask &= region
-    contours,_=cv2.findContours(mask,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
+    # Keep white/yellow masks separate: indoor green mats can touch the ball
+    # in the yellow hue band and otherwise merge it into a giant contour.
+    contours=[]
+    for color_mask in [white,yellow]:
+        if roi is not None: color_mask = color_mask & region
+        cs,_=cv2.findContours(color_mask,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
+        contours.extend(cs)
     out=[]
     for c in contours:
         area=cv2.contourArea(c); per=cv2.arcLength(c,True)

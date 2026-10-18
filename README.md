@@ -48,3 +48,41 @@ python analyze_golf.py --video /path/iphone.mov --stage 0 --out output
 `--stage 8` 与完整运行均启用保守降级。未检测项目为 null + reason；错误写 failure.json。球轨迹点不能外推成撞网/落地；无深度、无尺度不报米数。HDR 转换优先 zscale；ffmpeg 无该滤镜时保留矩阵转换并写明确质量警告。Mac 的 MediaPipe 即使 CPU 也初始化 OpenGL，在受限沙箱/无显示服务可能失败；正常桌面终端可跑，CPU 推理由 XNNPACK 执行。
 
 验证：`python -m pytest -q`，覆盖无姿态、无球、正面拒绝距离、尺度单位、低置信度禁止建议。参数集中在 config.yaml。每个估计都有 method/confidence；模型置信度及工程质量分不是经数据集校准的概率。
+
+完整运行：
+
+```bash
+python analyze_golf.py --video /path/iphone.mov --handedness right --view 45deg --out output
+# 查看中文交互式视频报告（无需 Web 框架）
+python -m http.server 8000 --directory output
+# 浏览器访问 http://localhost:8000/report.html
+```
+
+严格复现可用 `pip install -r requirements.lock.txt`（锁文件来自 Apple Silicon / Python3.11；其他平台优先 requirements.txt）。预训练权重：[MediaPipe Pose Landmarker 官方说明](https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker/python)，代码中固定 full/float16/1 下载地址；也可手动放到 models/pose_landmarker_full.task。代码 MIT，依赖和模型适用各自许可证。
+
+输出 pose.json 为逐帧像素坐标/置信度/时间戳；ball_track.json 为击球窗口的逐帧候选、速度（px/s）、丢失区间和有效段，窗口外未分析；swing_metrics.json 包含阶段、动作指标、三层距离及质量。`normalized.mp4` 是本地规范化缓存，不含音频。原视频/分析视频/关键帧均被 Git 忽略，默认只本地保存。
+
+稳像/质量模块以稀疏背景光流 + RANSAC 估计手机晃动/变焦；明显晃动时禁止把鼻尖像素位移解释成头部动作，并拒绝平面距离。输出曝光极值像素比例、姿态覆盖率；这些质量分是工程评分。未做畸变校正、精确深度或真实杆面估计。
+
+提高精度：手机固定、侧面拍全身/球/杆头，尽量120fps以上；球与背景对比清楚；避免投影白点和过曝；保留完整准备—上杆—击球—收杆；一段一杆。30fps 高速小球可能帧间直接消失，增加模型复杂度无法恢复根本没被拍到的信息。
+
+## Step 9：真实视频实测（2026-10-18）
+
+输入为用户提供的 IMG_9651.MOV：63.29 秒、1898 帧、约30fps、1920×1080 HEVC Main10/HLG、带 -90° 显示旋转。输出为1080×1920 H264/yuv420p，约63.33秒；规范化恒帧率编码产生约0.04秒尾部差异。片中包含多次挥杆，默认选择运动得分最高的一次；建议单杆裁剪，或用人工 impact-time 指定目标。
+
+在 Apple M1 / Python3.11 / CPU XNNPACK / pose stride=2 上，完整 CLI 实测 **122.41秒**（权重已下载，不含首次安装）。阶段与视频输出均实际生成，8项自动测试通过；产物验证：
+
+```bash
+python scripts/check_outputs.py output-real
+```
+
+- 姿态覆盖 **99.10%（1881/1898帧）**，球手身份评分0.8。目视复核 address/top/impact/finish 骨架基本贴合；快速手腕、转身遮挡仍可能偏移。
+- Address **41.975s**、Top **43.844s**、Impact 近似 **44.111s**、Finish **44.845s**。修复后的两次独立姿态推理/分割中，全部阶段时间差为 **0.000秒**；这是本例复现结果，不保证任意视频同等准确。Impact 仍为手腕代理，置信度0.4，不是接触传感器测量。
+- 本杆报告测得：准备到 impact 近似时刻鼻尖移动 **51.65px / 0.357躯干长度**（置信度0.4），顶点领先臂夹角 **156.94°**（0.5），收杆后髋/踝相对波动 **0.082躯干长度**（0.5）。报告给出对应帧号、纠正练习，以及领先臂较伸展的正面观察。没有把人体像素换成假厘米。
+- 能检测草垫上的真实白球（半径约8.6px）；发现并修复了黄/白颜色掩膜合并草垫导致漏球的问题。
+- **本例未通过“连续击后轨迹”验收**：高速拖影与30fps短飞行导致有效击后点不足3个。没有可靠轨迹线，也没有确认撞网；Layer1距离/飞行时间、Layer2球速/杆速均为null，报告写明原因。Layer3不输出carry。不能把这次运行宣传成可靠测距成功。
+- 本机 ffmpeg 没有 zscale，实际走色彩矩阵降级并降低球候选置信度；HLG高光/颜色仍有偏差。建议装带libzimg/zscale的ffmpeg后复跑。
+
+验收状态：本例的视频生成、姿态与中文量化报告、失败降级、重复时间戳已验证；击后轨迹和米制距离仍未验证成功。后续优先增加高帧率、短曝光的真实标注数据与独立球检测器，评估召回和误检后替换颜色候选；不要用插值补出不存在的飞行帧。单元测试中的合成球仅用于算法回归，绝不作为示例实测轨迹。
+
+每个 Step 0–9 均有独立 Git 提交；`--stage N` 运行到对应阶段。`golfcoach.pipeline.finish_analysis` 为后续本地上传页面保留服务接口；当前优先CLI与静态HTML报告，无需外部账号/API。

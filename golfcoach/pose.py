@@ -56,7 +56,31 @@ def extract(video, cfg, model_dir):
         size = np.median(body)/h
         centrality = 1-abs(np.median(ps[:,23,0])/w-.5)
         return float(motion*2+size+centrality*.15)*min(len(ps)/20,1)
+    # Detector can briefly duplicate one golfer at a turn, splitting an identity.
+    # Merge only short overlaps with spatial agreement, never concurrent people.
+    raw_track_count=len(tracks)
+    merged=[]
+    for tr in sorted(tracks,key=lambda tr:tr['samples'][0][0]):
+        joined=False
+        for old in merged:
+            aa=dict(old['samples']); bb=dict(tr['samples']); common=set(aa)&set(bb)
+            overlap_seconds=(rows[max(common)]['timestamp']-rows[min(common)]['timestamp']) if common else 0.
+            if common:
+                distance=float(np.median([np.linalg.norm(aa[k][[23,24],:2].mean(0)-bb[k][[23,24],:2].mean(0)) for k in common]))
+                near=overlap_seconds<1. and distance<w*.08
+            else:
+                gap=rows[tr['samples'][0][0]]['timestamp']-rows[old['samples'][-1][0]]['timestamp']
+                distance=np.linalg.norm(old['samples'][-1][1][[23,24],:2].mean(0)-tr['samples'][0][1][[23,24],:2].mean(0))
+                near=0<=gap<1. and distance<w*.08
+            if near:
+                for k,p in bb.items():
+                    if k not in aa or np.mean(p[:,2])>np.mean(aa[k][:,2]): aa[k]=p
+                old['samples']=sorted(aa.items());joined=True;break
+        if not joined: merged.append(tr)
+    tracks=merged
     ranked = sorted(tracks,key=score,reverse=True)
+    diagnostics=[{'first':rows[tr['samples'][0][0]]['timestamp'],'last':rows[tr['samples'][-1][0]]['timestamp'],'samples':len(tr['samples']),'score':score(tr)} for tr in ranked]
+    print('身份候选',diagnostics,flush=True)
     selected = ranked[0]
     confidence = .8 if len(ranked)==1 else float(np.clip((score(selected)-score(ranked[1]))/max(score(selected),.001),0,.8))
     smooth = None
@@ -81,7 +105,7 @@ def extract(video, cfg, model_dir):
             f=(rows[j]['timestamp']-rows[a]['timestamp'])/(rows[b]['timestamp']-rows[a]['timestamp'])
             rows[j]['landmarks']=[{'x':u['x']*(1-f)+v['x']*f,'y':u['y']*(1-f)+v['y']*f,'confidence':min(u['confidence'],v['confidence'])*.8} for u,v in zip(rows[a]['landmarks'],rows[b]['landmarks'])]
             rows[j].update(confidence=min(rows[a]['confidence'],rows[b]['confidence'])*.8, method='short_gap_interpolation')
-    return rows, {'confidence':confidence,'method':'body_relative_wrist_motion_size_center_identity_gating','candidate_tracks':len(tracks),'reason':None if confidence>=.3 else '多人身份选择有歧义，请裁剪到挥杆者后复跑'}
+    return rows, {'confidence':confidence,'method':'body_relative_wrist_motion_size_center_identity_gating','candidate_tracks':len(tracks),'raw_track_fragments':raw_track_count,'tracks':diagnostics,'reason':None if confidence>=.3 else '多人身份选择有歧义，请裁剪到挥杆者后复跑'}
 
 
 def draw(im,row):

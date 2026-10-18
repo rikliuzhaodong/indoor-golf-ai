@@ -2,24 +2,28 @@ from html import escape
 from .io import dump
 
 
-def generate(metrics,phases,quality):
+def generate(metrics,phases,quality,cfg=None):
+    cfg=cfg or {}
     tips=[];good=[]
     def evidence(k):
         m=metrics.get(k,{})
-        if m.get('value') is None or m.get('confidence',0)<.25: return None
+        if m.get('value') is None or m.get('confidence',0)<cfg.get('min_confidence',.25): return None
         return m
     def add(k,threshold,phenomenon,fix,drill,invert=False):
         m=evidence(k)
         if m and ((m['value']<threshold) if invert else (m['value']>threshold)):
             tips.append({'phenomenon':phenomenon,'evidence':f"{m['phase']} @ {m['timestamp']:.3f}s / 帧 {m['frame']}：{m['value']:.3f} {m['unit']}，置信度 {m['confidence']:.2f}",'metric':k,'correction':fix,'drill':drill,'confidence':m['confidence'],'method':'conservative_2d_rules'})
-    add('head_displacement_torso_ratio',.18,'准备到击球近似时刻头部投影移动较大','固定手机后，尝试让头部保持在准备位置附近；不要刻意锁死颈部','下一杆做半挥杆，在 address/impact 关键帧比较鼻尖位置。')
-    add('lead_arm_top_angle_deg',145,'顶点领先臂在画面中弯曲较明显','缩短上杆到领先臂能自然伸展的位置，保持放松','下一杆做三次慢速上杆停顿，复查顶点肩—肘—腕夹角。',True)
-    add('finish_sway_torso_ratio',.045,'结束姿势的髋部相对双踝仍明显晃动','降低挥杆力度，让结束姿势自然站稳','下一杆以七成力度击球，收杆后保持2秒，再比较 finish 后0.5秒髋部波动。')
-    add('top_wrist_relative_trail_shoulder',.15,'顶点领先手腕在画面中低于后侧肩','先确认是否为刻意短杆；全挥时用慢速上杆检查手臂抬升','下一杆做上杆顶点停顿，对照 top 截图中的手腕和后侧肩。')
+    add('head_displacement_torso_ratio',cfg.get('head_displacement_torso',.18),'准备到击球近似时刻头部投影移动较大','固定手机后，尝试让头部保持在准备位置附近；不要刻意锁死颈部','下一杆做半挥杆，在 address/impact 关键帧比较鼻尖位置。')
+    add('lead_arm_top_angle_deg',cfg.get('lead_arm_min_angle_deg',145),'顶点领先臂在画面中弯曲较明显','缩短上杆到领先臂能自然伸展的位置，保持放松','下一杆做三次慢速上杆停顿，复查顶点肩—肘—腕夹角。',True)
+    add('finish_sway_torso_ratio',cfg.get('finish_sway_torso',.045),'结束姿势的髋部相对双踝仍明显晃动','降低挥杆力度，让结束姿势自然站稳','下一杆以七成力度击球，收杆后保持2秒，再比较 finish 后0.5秒髋部波动。')
+    add('top_wrist_relative_trail_shoulder',cfg.get('top_wrist_below_shoulder_torso',.15),'顶点领先手腕在画面中低于后侧肩','先确认是否为刻意短杆；全挥时用慢速上杆检查手臂抬升','下一杆做上杆顶点停顿，对照 top 截图中的手腕和后侧肩。')
     for k,limit,text in [('finish_sway_torso_ratio',.045,'收杆后髋部相对双踝的投影较稳定'),('head_displacement_torso_ratio',.18,'准备至击球近似时刻头部投影位移较小')]:
         m=evidence(k)
         if m and m['value']<=limit:
             good.append(f"{text}：{m['value']:.3f} {m['unit']}（{m['phase']}，帧 {m['frame']}）。")
+    arm=evidence('lead_arm_top_angle_deg')
+    if arm and arm['value']>=150:
+        good.append(f"顶点领先臂在画面中保持较伸展：{arm['value']:.1f}°（top，帧 {arm['frame']}）；仅为2D观察。")
     if not tips:
         summary='这一杆的可靠二维指标尚未触发明确纠正阈值；请结合关键帧复核，不能据此判断没有问题。'
     else: summary='这一杆优先复核：'+tips[0]['phenomenon']+'（二维投影观察）。'

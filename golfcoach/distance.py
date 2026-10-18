@@ -6,6 +6,8 @@ def layered(ball,view,cfg,physics,camera_distance=None):
     assumptions=['针孔相机；无镜头/内参标定；球直径 42.67mm；球与背景颜色候选可能混淆', '平面位移假设飞行近似平行成像面、相机固定、深度近似恒定；不是三维距离，不是球到网真实距离', '撞网/出画无法仅凭消失区分；最后可靠观测点不是落点']
     missing=lambda reason,unit:estimate(method='insufficient_observation',reason=reason,unit=unit)
     out={'assumptions':assumptions,'layer1':{'observed_planar_displacement':missing('没有足够有效球轨迹','m'),'flight_time':missing('没有可靠离座和最后观测时间','s'),'three_dimensional_displacement':missing('无相机标定/深度观测','m')},'layer2':{'clubhead_speed':missing('杆头身份不可靠；不把手腕速度当杆头速度','m/s'),'clubhead_speed_mph':missing('杆头身份不可靠','mph'),'ball_speed':missing('无可靠尺度和轨迹','m/s'),'launch_angle_image':missing('球轨迹不足','deg'),'wrist_or_face_orientation':missing('杆身直线不能确定杆面/手腕旋转','deg')},'layer3':{'outdoor_carry':missing('默认关闭；需要可靠初速度、地面发射角与旋转，当前未达到质量门槛','m'),'warning':'模型估算，不是测距仪结果；室内撞网不是落点'}}
+    if camera_distance is not None:
+        out['camera_reference']=estimate(camera_distance,.25,'user_supplied_camera_ball_distance','仅辅助输入；不能代替内参标定，未据此恢复三维轨迹',unit='m')
     seg=ball.get('segments',[])
     if not seg: return out
     points=seg[0]['points']; first,last=points[0],points[-1]

@@ -18,3 +18,7 @@ python analyze_golf.py --video /path/iphone.mov --stage 0 --out output
 ## Step 1：人体姿态
 
 `--stage 1` 生成 `pose.json` / `overlay.mp4`。MediaPipe Tasks CPU 多人检测，按身体相对手腕运动、尺寸与中心选择一个身份，短间隔插值与 EMA 平滑。坐标为旋转、缩放后的输出视频像素。长遮挡不外推，多人身份评分接近时报告歧义。跟踪仍可能在交叉遮挡时换人；首次自动下载官方公开 full 权重。
+
+## Step 2：阶段
+
+`--stage 2` 写出阶段时间和对应帧。按髋中心归一化手腕高度与速度寻找上杆顶点、下杆低点与结束稳定段；长视频默认选最强的一次候选挥杆。Impact 只在球离座后才可提升置信度，手腕代理最高 0.4。可 `--impact-time 秒` 人工指定，明确标记 user_annotation；不能检测的阶段为 null。2D 阶段仍可能误判练习挥杆，关键帧必须复核。

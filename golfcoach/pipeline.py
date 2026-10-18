@@ -13,6 +13,8 @@ def run(a,cfg,video,meta):
     dump(a.out/'ball_track.json', balls)
     if balls.get('events',{}).get('impact') and a.impact_time is None:
         phases['impact']=balls['events']['impact']
-    dump(a.out/'swing_metrics.json', {'phases':phases})
+    from .distance import layered
+    distance=layered(balls,a.view,cfg['ball'],cfg['physics'],a.camera_distance) if a.stage>=4 else {}
+    dump(a.out/'swing_metrics.json', {'phases':phases,'distance':distance})
     from .render import render
     render(video,a.out/'overlay.mp4', rows, phases, balls, a, None)

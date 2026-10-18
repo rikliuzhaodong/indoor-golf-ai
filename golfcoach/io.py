@@ -20,7 +20,16 @@ def normalize(src, dst, cfg):
     meta = probe(src)
     vf = []
     if meta.get('color_transfer') in ('arib-std-b67','smpte2084'):
-        vf += ['zscale=t=linear:npl=100', 'format=gbrpf32le', 'zscale=p=bt709', 'tonemap=tonemap=hable:desat=0', 'zscale=t=bt709:m=bt709:r=tv']
+        filters = subprocess.run(['ffmpeg','-hide_banner','-filters'],capture_output=True,text=True,check=True).stdout
+        if ' zscale ' in filters:
+            vf += ['zscale=t=linear:npl=100', 'format=gbrpf32le', 'zscale=p=bt709', 'tonemap=tonemap=hable:desat=0', 'zscale=t=bt709:m=bt709:r=tv']
+            meta['hdr_conversion'] = 'zscale_hable'
+        else:
+            # Portable decode fallback, explicitly not a calibrated HDR tone map.
+            vf += ['scale=in_color_matrix=bt2020:out_color_matrix=bt709', 'format=yuv420p']
+            meta['hdr_conversion'] = 'matrix_only_fallback'
+            meta['warning'] = 'ffmpeg 缺少 zscale，仅色彩矩阵转换；HDR 高光和颜色不准确，球检测置信度应降低'
+            print(meta['warning'],flush=True)
     w = cfg['max_width']
     vf += [f"scale='min({w},iw)':-2", 'setsar=1']
     # ffmpeg autorotates before filtering. Preserve input frame rate; no 30fps resample.

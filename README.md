@@ -14,3 +14,7 @@ python analyze_golf.py --video /path/iphone.mov --stage 0 --out output
 ```
 
 验证 `output/normalized.mp4` 和 `input_info.json`。支持 iPhone HEVC、旋转及 HDR 转 SDR；需要 ffmpeg。首轮需联网下载公开姿态权重，之后离线。输入原视频及 GPS 元数据不会上传或提交。
+
+## Step 1：人体姿态
+
+`--stage 1` 生成 `pose.json` / `overlay.mp4`。MediaPipe Tasks CPU 多人检测，按身体相对手腕运动、尺寸与中心选择一个身份，短间隔插值与 EMA 平滑。坐标为旋转、缩放后的输出视频像素。长遮挡不外推，多人身份评分接近时报告歧义。跟踪仍可能在交叉遮挡时换人；首次自动下载官方公开 full 权重。

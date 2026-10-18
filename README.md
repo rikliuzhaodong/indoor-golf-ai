@@ -30,3 +30,7 @@ python analyze_golf.py --video /path/iphone.mov --stage 0 --out output
 ## Step 4：室内分层距离
 
 `--stage 4` 查看 swing_metrics.json.distance。稳定球直径≥6px、样本≥3、直径变异≤20%，并有至少3个击后球点，才尝试 `42.67mm / 球直径像素` 恒深平面尺度；飞行直径变化>30%或 front/unknown 机位拒绝米数。Layer1 输出观测平面位移与可见时间；不是三维距离。区间仅为尺度敏感性范围，不是统计置信区间。Layer2 尝试图像发射角和平面球速（至少4点）；杆头速度/杆面方向不可可靠辨识则 null。Layer3 即使配置开启也受质量门槛约束，MVP 不产生虚假 carry。`--camera-distance` 预留为辅助输入，当前不会将单一距离升级成标定或3D结果。
+
+## Step 5：动作指标
+
+`--stage 5` 查看 metrics，每项带 phase、frame、timestamp、method、confidence。以髋中心/踝中心归一化，计算站宽、膝屈、图像脊柱倾角、头部位移、顶点领先臂夹角、肩髋投影夹角、髋投影转移、顶点手腕高度、下杆手部横移、收杆稳定性。左右手分别使用正确领先臂。侧/斜侧透视不能可靠恢复真实 X-Factor、压力重心、杆面或 over-the-top；只报告2D代理并标低置信度，不包装为生物力学结论。

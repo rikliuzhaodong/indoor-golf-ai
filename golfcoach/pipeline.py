@@ -15,6 +15,8 @@ def run(a,cfg,video,meta):
         phases['impact']=balls['events']['impact']
     from .distance import layered
     distance=layered(balls,a.view,cfg['ball'],cfg['physics'],a.camera_distance) if a.stage>=4 else {}
-    dump(a.out/'swing_metrics.json', {'phases':phases,'distance':distance})
+    from .metrics import calculate
+    metrics=calculate(rows,phases,a.handedness,a.view) if a.stage>=5 else {}
+    dump(a.out/'swing_metrics.json', {'phases':phases,'distance':distance,'metrics':metrics})
     from .render import render
     render(video,a.out/'overlay.mp4', rows, phases, balls, a, None)
